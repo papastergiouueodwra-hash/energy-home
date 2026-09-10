@@ -2961,6 +2961,11 @@
 
         answers[question] = value;
 
+        // On the final question, show the result immediately after selecting Yes/No.
+        if (currentStep === totalSteps && question === "gas") {
+          setTimeout(showQuizResult, 120);
+        }
+
       });
 
     });
