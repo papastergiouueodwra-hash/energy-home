@@ -1,0 +1,41 @@
+name: Fix Energy Home quiz
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-quiz:
+    if: ${{ !contains(github.event.head_commit.message, 'Fix quiz auto result') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Patch quiz behavior
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old = '''        answers[question] = value;\n\n      });'''
+          new = '''        answers[question] = value;\n\n        // On the final question, show the result immediately after selecting Yes/No.\n        if (currentStep === totalSteps && question === "gas") {\n          setTimeout(showQuizResult, 120);\n        }\n\n      });'''
+
+          if old not in s:
+              raise SystemExit('Expected quiz code was not found.')
+
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Fix quiz auto result" || exit 0
+          git push
